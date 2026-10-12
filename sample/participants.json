@@ -1,0 +1,19 @@
+{
+  "participants": [
+    {
+      "name": "Nguyễn Lan",
+      "email": "lan@example.com",
+      "aliases": ["Lan"]
+    },
+    {
+      "name": "Nguyễn Minh",
+      "email": "minh@example.com",
+      "aliases": ["Minh"]
+    },
+    {
+      "name": "Trần Huy",
+      "email": "huy@example.com",
+      "aliases": ["Huy"]
+    }
+  ]
+}

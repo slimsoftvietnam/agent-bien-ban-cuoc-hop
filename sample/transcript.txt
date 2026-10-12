@@ -1,0 +1,8 @@
+[00:00:05] Nguyễn Lan: Hôm nay nhóm rà soát phạm vi thử nghiệm và cách bàn giao công việc.
+[00:00:14] Nguyễn Lan: Thống nhất chọn phương án B cho đợt thử nghiệm.
+[00:00:22] Trần Huy: Tôi sẽ chuẩn bị checklist triển khai trước ngày 15/10/2026.
+[00:00:30] Nguyễn Lan: Minh phụ trách cấu hình thử nghiệm, hạn 16/10/2026.
+[00:00:38] Nguyễn Minh: Tôi sẽ chạy thử và gửi báo cáo ngày 16/10/2026.
+[00:00:44] Nguyễn Lan: Cần hoàn thành tài liệu hướng dẫn trước ngày 17/10/2026.
+[00:00:46] Khách: Phần tích hợp có thể xong sớm hơn nếu môi trường ổn định.
+[00:00:50] Nguyễn Lan: Công cụ sẽ giúp hệ thống đọc dữ liệu mới, đây là phần giải thích tính năng chứ không phải giao việc.
