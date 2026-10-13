@@ -1,0 +1,19 @@
+[00:00:00] Nguyễn Minh Anh: Chào mọi người, tôi là Minh Anh. Hôm nay chúng ta họp để chốt kế hoạch ra mắt khóa học AI Agent vào tháng mười một. Có ba nội dung: học phí, nội dung khóa học, và kế hoạch truyền thông.
+[00:00:12] Trần Quốc Bảo: Chào chị, em là Bảo bên kỹ thuật. Về nền tảng học, hệ thống đã sẵn sàng khoảng tám mươi phần trăm, còn thiếu phần thanh toán tự động.
+[00:00:21] Nguyễn Minh Anh: Vậy Bảo hoàn thiện phần thanh toán tự động trước thứ Sáu ngày 16 tháng 10 được không?
+[00:00:26] Trần Quốc Bảo: Dạ được chị, em nhận việc này và sẽ hoàn thành trước thứ Sáu ngày 16 tháng 10.
+[00:00:32] Phạm Đức Long: Mình là Long bên kinh doanh. Về học phí, mình đề xuất một triệu chín trăm chín mươi nghìn đồng như khóa trước.
+[00:00:39] Lê Thu Hà: Em là Thu Hà phụ trách marketing. Em nghĩ mức đó hơi cao với học viên mới, khảo sát cho thấy đa số chọn mức dưới một triệu rưỡi.
+[00:00:48] Nguyễn Minh Anh: Sau khi cân nhắc, chúng ta chốt học phí ưu đãi một triệu bốn trăm chín mươi nghìn đồng cho một trăm học viên đầu tiên.
+[00:00:54] Phạm Đức Long: Đồng ý với chị. Mình sẽ cập nhật bảng giá và kịch bản tư vấn cho đội bán hàng trước ngày 20 tháng 10.
+[00:01:02] Nguyễn Minh Anh: Tiếp theo là nội dung khóa học. Chúng ta thống nhất khóa học gồm tám buổi, trong đó có hai buổi thực hành xây dựng agent với dữ liệu thật.
+[00:01:10] Trần Quốc Bảo: Em đề xuất thêm một buổi về bảo mật dữ liệu khi dùng agent, vì học viên doanh nghiệp rất quan tâm.
+[00:01:16] Nguyễn Minh Anh: Ý hay, nhưng việc thêm buổi thứ chín thì để tuần sau bàn tiếp khi có phản hồi từ giảng viên.
+[00:01:22] Lê Thu Hà: Về truyền thông, em sẽ chạy chiến dịch quảng cáo trên Facebook và TikTok, bắt đầu từ ngày 25 tháng 10.
+[00:01:29] Nguyễn Minh Anh: Thu Hà gửi kế hoạch truyền thông chi tiết và ngân sách cho tôi duyệt trước thứ Tư ngày 21 tháng 10 nhé.
+[00:01:35] Lê Thu Hà: Dạ vâng, em sẽ gửi trước thứ Tư ngày 21 tháng 10.
+[00:01:39] Phạm Đức Long: Còn hợp đồng với đối tác cung cấp phòng học trực tuyến thì cần ai đó kiểm tra lại điều khoản bảo mật.
+[00:01:45] Nguyễn Minh Anh: Đúng rồi, việc kiểm tra hợp đồng này cần làm trong tháng này, tôi sẽ sắp xếp người sau.
+[00:01:51] Trần Quốc Bảo: Ngoài ra em cần quyền truy cập tài khoản quảng cáo để gắn mã theo dõi chuyển đổi lên trang đăng ký.
+[00:01:57] Lê Thu Hà: Em sẽ cấp quyền cho anh Bảo ngay trong chiều nay.
+[00:02:00] Nguyễn Minh Anh: Tóm lại, chúng ta đã chốt học phí ưu đãi, cấu trúc tám buổi và ngày bắt đầu quảng cáo là 25 tháng 10. Cuộc họp sau vào sáng thứ Hai tuần tới. Cảm ơn mọi người.

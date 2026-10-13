@@ -1,8 +1,12 @@
 __pycache__/
 *.py[cod]
-.runtime/
-outputs/
-tests/.tmp/
-*.log
+models/*
+!models/README.md
+config.local.json
+bien-ban/
+bien-ban-tu-kiem-thu/
+bien-ban-loi.log
+samples/_tmp/
+*.wav
 .DS_Store
 Thumbs.db

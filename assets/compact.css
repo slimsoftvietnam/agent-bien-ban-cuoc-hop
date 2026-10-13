@@ -1,0 +1,61 @@
+:root{--ink:#1F262C;--muted:#5F6870;--faint:#8C949B;--line:#E3E0D8;--teal:#1F5C6B;--orange:#C8622F;--soft:#F5F2EC;--paper:#fff;
+  --sans:'Be Vietnam Pro','Segoe UI',Arial,sans-serif;--serif:'Lora','Cambria',serif;--thumb:62mm;--fs:10.4pt}
+*{box-sizing:border-box}
+html{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body{margin:0;background:#ECE9E3;color:var(--ink);font:var(--fs)/1.55 var(--sans)}
+.sheet{max-width:210mm;margin:24px auto;background:var(--paper);padding:16mm 15mm;box-shadow:0 10px 30px rgba(0,0,0,.12)}
+@media (max-width:800px){.sheet{margin:0;padding:20px 16px;box-shadow:none}}
+
+/* đầu biên bản */
+.head{border-bottom:3px solid var(--teal);padding-bottom:10px;margin-bottom:14px}
+.kicker{font:700 8.5pt var(--sans);letter-spacing:.22em;text-transform:uppercase;color:var(--orange)}
+h1{font:700 20pt/1.2 var(--serif);margin:4px 0 8px;color:var(--ink)}
+.meta{display:flex;flex-wrap:wrap;gap:4px 18px;font-size:9pt;color:var(--muted)}
+.meta b{color:var(--ink);font-weight:600}
+.stats{display:flex;gap:10px;margin:12px 0 4px}
+.stat{flex:1;background:var(--soft);border-radius:8px;padding:7px 10px;font-size:8.5pt;color:var(--muted)}
+.stat b{display:block;font:700 15pt/1.1 var(--sans);color:var(--teal)}
+
+/* mục */
+h2{font:700 12.5pt var(--sans);color:var(--teal);margin:18px 0 8px;padding-bottom:4px;border-bottom:1px solid var(--line);
+  break-after:avoid}
+h2 span{color:var(--orange);margin-right:6px}
+ul.points{margin:0;padding-left:18px}
+ul.points li{margin:0 0 5px}
+
+/* diễn biến */
+.row{display:grid;grid-template-columns:15mm 1fr;gap:0 10px;padding:9px 0;border-bottom:1px solid var(--line);break-inside:avoid}
+.row.has-img{grid-template-columns:15mm 1fr var(--thumb)}
+.t{font:700 9pt var(--sans);color:var(--teal);padding-top:2px}
+.row h3{font:700 10.6pt/1.35 var(--sans);margin:0 0 3px}
+.row p{margin:0}
+.q{margin-top:5px;font:italic 8.8pt/1.45 var(--serif);color:var(--muted)}
+.q::before{content:"“"}.q::after{content:"”"}
+.thumb{margin:0}
+.thumb img,.thumb svg{width:100%;height:auto;display:block;border-radius:5px;border:1px solid var(--line)}
+.thumb figcaption{font-size:7.5pt;color:var(--faint);margin-top:2px;line-height:1.3}
+
+/* bảng */
+table{width:100%;border-collapse:collapse;font-size:9.4pt}
+th{text-align:left;font-weight:600;color:var(--muted);border-bottom:1.5px solid var(--teal);padding:5px 6px}
+td{border-bottom:1px solid var(--line);padding:6px;vertical-align:top}
+tr{break-inside:avoid}
+.none{color:var(--muted);font-style:italic;margin:0}
+.unk{color:#B23A2B;font-weight:600}
+.small{font-size:8.6pt;color:var(--muted)}
+.foot{margin-top:16px;padding-top:8px;border-top:1px solid var(--line);font-size:8.2pt;color:var(--faint);line-height:1.45}
+.foot ul{margin:3px 0 0;padding-left:16px}
+
+/* mức thu gọn để vừa số trang tối đa */
+body.c1{--thumb:50mm;--fs:10pt}
+body.c2{--thumb:44mm;--fs:9.6pt}
+body.c2 .row{padding:6px 0}
+body.c3{--thumb:38mm;--fs:9.2pt}
+body.c3 .q{display:none}
+body.c3 .row{padding:5px 0}
+
+@page{size:A4;margin:13mm 14mm 14mm;
+  @bottom-right{content:"Trang " counter(page) "/" counter(pages);font:8pt 'Be Vietnam Pro','Segoe UI',sans-serif;color:#8C949B}}
+@media print{body{background:#fff}.sheet{max-width:none;margin:0;padding:0;box-shadow:none}.noprint{display:none}}
+.noprint{position:sticky;top:0;z-index:5;text-align:right;padding:8px 16px;background:rgba(31,38,44,.9)}
+.noprint button{font:600 12px var(--sans);border:0;border-radius:999px;padding:6px 14px;background:var(--orange);color:#fff;cursor:pointer}
