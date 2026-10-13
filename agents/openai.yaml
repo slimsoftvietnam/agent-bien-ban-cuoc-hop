@@ -1,4 +1,4 @@
 interface:
   display_name: "Tóm tắt biên bản cuộc họp"
-  short_description: "Tạo biên bản, Action Items và email nháp"
-  default_prompt: "Dùng $meeting-minutes-agent để xử lý cuộc họp này và tạo bộ đầu ra kiểm chứng được."
+  short_description: "Tạo trang biên bản chia sẻ, PDF và Action Items"
+  default_prompt: "Dùng $meeting-minutes-agent để xử lý cuộc họp này, tạo bản web dễ chia sẻ và PDF A4 có dẫn chứng."

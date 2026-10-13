@@ -1,6 +1,6 @@
 # Meeting Minutes Agent
 
-Codex Agent Skill tạo biên bản có dẫn chứng từ transcript, audio hoặc video. Skill xuất HTML/PDF, bảng Action Items Excel và email nháp theo từng người; không suy đoán dữ liệu thiếu và không gửi email khi chưa được người dùng phê duyệt.
+Codex Agent Skill tạo biên bản có dẫn chứng từ transcript, audio hoặc video. Mỗi lần chạy tạo đồng thời trang web responsive dễ xem/chia sẻ và PDF A4 để lưu trữ/in, cùng bảng Action Items Excel và email nháp theo từng người. Skill không suy đoán dữ liệu thiếu, không tự công khai biên bản và không gửi email khi chưa được phê duyệt.
 
 ## Cài đặt
 
@@ -22,3 +22,10 @@ python .\tests\test_smoke.py
 ```
 
 Smoke test chạy hoàn toàn cục bộ, tạo video tổng hợp tạm thời và xác nhận PDF, Excel, ảnh chụp, dữ liệu phân tích cùng email nháp chưa gửi.
+
+## Hai bản biên bản chính
+
+- `bien-ban-share.html`: bản web responsive có mục lục, liên kết sâu, lọc theo người nói, sắp xếp Action Items và nút chia sẻ.
+- `bien-ban.pdf`: bản A4 dọc có cùng dữ liệu, phù hợp gửi email, lưu trữ và in.
+
+`sharing.json` luôn ghi trạng thái xuất bản. Mặc định là `local_only`; việc triển khai private/public chỉ được thực hiện khi người dùng xác nhận phạm vi chia sẻ.

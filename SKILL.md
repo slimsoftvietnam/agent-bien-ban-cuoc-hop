@@ -1,6 +1,6 @@
 ---
 name: meeting-minutes-agent
-description: Tạo biên bản cuộc họp có dẫn chứng từ transcript, audio hoặc video; tạo ảnh phù hợp với loại nguồn; trích xuất quyết định và Action Items; xuất HTML/PDF, Excel và email cho người tham gia sau khi xác nhận. Dùng khi cần tóm tắt họp mà không được suy đoán thông tin thiếu hoặc tự gửi email.
+description: Tạo biên bản cuộc họp có dẫn chứng từ transcript, audio hoặc video; xuất đồng thời trang web dễ xem/chia sẻ và PDF A4, kèm Action Items, hình ảnh và email nháp sau khi xác nhận. Dùng khi cần tóm tắt họp mà không được suy đoán thông tin thiếu, tự công khai dữ liệu hoặc tự gửi email.
 ---
 
 # Meeting Minutes Agent
@@ -13,6 +13,8 @@ Tạo một bộ hồ sơ cuộc họp có thể kiểm chứng. Ưu tiên bằn
 - Mọi quyết định và Action Item phải giữ mốc thời gian, người nói và câu dẫn chứng. Nếu nguồn không có mốc, dùng số dòng hoặc số trang.
 - Ghi `Chưa xác định`, `Chưa nêu` hoặc `Cần rà soát` khi dữ liệu thiếu hay mâu thuẫn.
 - Không gọi công cụ gửi email cho đến khi đã soạn xong, cho người dùng xem nội dung/đính kèm, hỏi địa chỉ người nhận và nhận xác nhận gửi rõ ràng.
+- Luôn tạo hai bản biên bản chính từ cùng một dữ liệu đã kiểm chứng: `bien-ban-share.html` để xem/chia sẻ và `bien-ban.pdf` để lưu trữ/in. Không để nội dung giữa hai bản mâu thuẫn.
+- Tạo trang web cục bộ không đồng nghĩa với công khai. Trước khi xuất bản trang cho người khác truy cập, phải trình bày rõ phạm vi chia sẻ (private/public hoặc danh sách người có quyền) và chỉ xuất bản sau khi người dùng xác nhận.
 - Ảnh chụp từ video là bằng chứng nguồn. Ảnh/đồ họa tạo cho audio chỉ là minh họa, phải ghi rõ `Hình minh họa được tạo từ nội dung audio` và không được dùng làm dẫn chứng.
 - Không đưa dữ liệu cuộc họp lên dịch vụ ngoài nếu người dùng chưa cho phép.
 
@@ -36,9 +38,13 @@ Tạo một bộ hồ sơ cuộc họp có thể kiểm chứng. Ưu tiên bằn
    2. **Ý chính:** kết luận, quyết định, vấn đề còn mở và dẫn chứng tương ứng.
    3. **Hình ảnh:** screenshot có timestamp từ video, hoặc hình/đồ họa được gắn nhãn minh họa khi nguồn chỉ có audio.
    4. **Kế hoạch hành động:** công việc, người phụ trách, deadline, trạng thái xác nhận và dẫn chứng. Không có dữ liệu thì ghi `Chưa nêu`.
-6. Kiểm tra HTML/PDF, hình ảnh, Excel và các file `.eml`. Nếu sửa dữ liệu phân tích, chạy lại script để mọi đầu ra đồng bộ.
-7. Chuẩn bị email riêng cho từng người tham gia có công việc; đính kèm PDF tóm tắt và nêu đúng Action Items của người đó. Sau khi soạn xong, thực hiện cổng gửi email bên dưới.
-8. Khi Google Drive được kết nối, chỉ tải đầu ra lên vị trí người dùng chỉ định.
+6. Tạo hai bản biên bản theo [chuẩn trình bày kép](references/output-design.md):
+   - **Bản web:** responsive, có mục lục, liên kết sâu từng phần, nút chia sẻ/sao chép, lọc diễn biến theo người nói, sắp xếp Action Items và ảnh có chú thích.
+   - **Bản PDF:** khổ A4 dọc, ưu tiên đọc/in, có metadata, số liệu tóm tắt, diễn biến kèm dẫn chứng, ảnh, quyết định, Action Items và mục cần rà soát.
+7. Kiểm tra trực quan cả trang web và toàn bộ trang PDF; xác nhận font tiếng Việt, ảnh, bảng, liên kết và dữ liệu khớp nhau. Nếu sửa dữ liệu phân tích, chạy lại script để mọi đầu ra đồng bộ.
+8. Nếu người dùng cần URL chia sẻ và Sites đang khả dụng, triển khai thư mục đầu ra như một static Site. Mặc định tạo Site private; chỉ đổi sang public hoặc mở quyền cho người khác sau xác nhận rõ ràng. Ghi URL và audience vào `sharing.json`. Nếu không có hosting, bàn giao `bien-ban-share.html` và nêu rõ đây mới là bản cục bộ.
+9. Chuẩn bị email riêng cho từng người tham gia có công việc; đính kèm PDF tóm tắt và nêu đúng Action Items của người đó. Sau khi soạn xong, thực hiện cổng gửi email bên dưới.
+10. Khi Google Drive được kết nối, chỉ tải đầu ra lên vị trí người dùng chỉ định.
 
 ## Cổng gửi email bắt buộc
 
@@ -51,7 +57,10 @@ Tạo một bộ hồ sơ cuộc họp có thể kiểm chứng. Ưu tiên bằn
 
 ## Đầu ra chuẩn
 
-- `bien-ban.html` và `bien-ban.pdf`: diễn biến cuộc họp, ý chính, hình ảnh, kế hoạch hành động và dẫn chứng. Video dùng screenshot; audio dùng hình/đồ họa được gắn nhãn minh họa.
+- `bien-ban-share.html`: bản web responsive để người dùng xem, tìm, lọc, sao chép và chia sẻ từng phần. Video dùng screenshot; audio dùng hình/đồ họa được gắn nhãn minh họa.
+- `bien-ban.pdf`: bản A4 dọc để lưu trữ/in, có cùng dữ liệu đã kiểm chứng với bản web.
+- `bien-ban.html`: bản tương thích có cùng nội dung với `bien-ban-share.html`.
+- `sharing.json`: trạng thái cục bộ hoặc URL/audience đã triển khai; không được ghi `published` nếu chưa có kết quả xác nhận từ dịch vụ hosting.
 - `action-items.xlsx`: một bảng thao tác được, có owner, email, deadline, trạng thái và dẫn chứng.
 - `email-drafts/*.eml`: một nháp riêng cho từng người có công việc; chỉ điền người nhận sau khi địa chỉ đã được người dùng cung cấp hoặc xác nhận.
 - `analysis/meeting_data.json`: dữ liệu chuẩn để kiểm toán hoặc chỉnh sửa.

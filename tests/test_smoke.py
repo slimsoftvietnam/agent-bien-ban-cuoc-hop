@@ -50,7 +50,9 @@ def main() -> None:
         ])
         expected = [
             output / "bien-ban.html",
+            output / "bien-ban-share.html",
             output / "bien-ban.pdf",
+            output / "sharing.json",
             output / "action-items.xlsx",
             output / "analysis" / "meeting_data.json",
             output / "analysis" / "peas-report.json",
@@ -66,6 +68,13 @@ def main() -> None:
         assert data["safety"]["email_sent"] is False
         assert len(data["screenshots"]) >= 4
         assert len(PdfReader(str(output / "bien-ban.pdf")).pages) >= 1
+        share_html = (output / "bien-ban-share.html").read_text(encoding="utf-8")
+        assert "Ý chính 30 giây" in share_html
+        assert "data-speaker-filter" in share_html
+        assert "Chia sẻ phần" in share_html
+        sharing = json.loads((output / "sharing.json").read_text(encoding="utf-8"))
+        assert sharing["status"] == "local_only"
+        assert sharing["url"] is None
         with zipfile.ZipFile(output / "action-items.xlsx") as workbook:
             assert "xl/workbook.xml" in workbook.namelist()
         drafts = list((output / "email-drafts").glob("*.eml"))
@@ -73,6 +82,9 @@ def main() -> None:
         for draft in drafts:
             assert b"X-Unsent: 1" in draft.read_bytes()
         report = json.loads((output / "analysis" / "peas-report.json").read_text(encoding="utf-8"))
+        assert report["A"]["share_html_created"] is True
+        assert report["A"]["pdf_created"] is True
+        assert report["A"]["web_published"] is False
         assert report["A"]["email_sent"] is False
         assert report["result"] == "PASS_WITH_REVIEW"
     print("SMOKE TEST PASS")

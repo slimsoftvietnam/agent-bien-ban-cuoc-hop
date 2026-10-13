@@ -72,12 +72,23 @@ Lần đầu dùng `faster-whisper` có thể cần tải model. Không dùng `s
 
 ## 4. Cấu trúc bản tóm tắt
 
-PDF/HTML phải có bốn phần theo thứ tự:
+Mỗi lần chạy phải có hai bản chính sinh từ cùng `analysis/meeting_data.json`:
+
+- `bien-ban-share.html`: bản web responsive để xem/chia sẻ.
+- `bien-ban.pdf`: bản A4 dọc để lưu trữ/in.
+
+Cả hai bản đều phải có các nội dung sau:
 
 1. Diễn biến cuộc họp.
 2. Ý chính.
 3. Hình screenshot từ video hoặc hình/đồ họa minh họa được gắn nhãn cho audio.
 4. Kế hoạch hành động gồm nội dung, người phụ trách, deadline, trạng thái xác nhận và dẫn chứng.
+
+Bản web bổ sung mục lục, liên kết sâu từng phần, lọc diễn biến theo người nói và thao tác sao chép. Bản PDF bổ sung metadata, số trang và ghi chú kiểm chứng. Xem [chuẩn trình bày kép](output-design.md).
+
+### Xuất bản bản web
+
+Script chỉ tạo file cục bộ và ghi `sharing.json` với trạng thái `local_only`. Khi người dùng cần URL, có thể triển khai toàn bộ thư mục đầu ra lên Sites hoặc dịch vụ static hosting đã được kết nối. Phải xác nhận audience trước khi đưa nội dung cuộc họp lên mạng; Site mới nên để private trừ khi người dùng yêu cầu public rõ ràng.
 
 ## 5. Phê duyệt và gửi email
 

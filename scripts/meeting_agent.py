@@ -427,55 +427,121 @@ def build_html(data: dict[str, Any], output_dir: Path) -> Path:
     css = (SKILL_ROOT / "assets" / "report.css").read_text(encoding="utf-8")
     decisions = data["decisions"]
     actions = data["action_items"]
-    decision_rows = [
-        [
-            html.escape(d["id"]),
-            html.escape(d["decision"]),
-            html.escape(d["speaker"]),
-            html.escape(d["evidence_ref"]),
-            html.escape(d["review_status"]),
-        ]
-        for d in decisions
-    ] or [["", "Không có quyết định rõ ràng trong nguồn.", "", "", ""]]
-    action_rows = [
-        [
-            html.escape(a["id"]),
-            html.escape(a["task"]),
-            html.escape(a["owner"]),
-            html.escape(a["deadline_text"]),
-            html.escape(a["review_status"]),
-            f"<span class='muted'>{html.escape(a['evidence_ref'])}: “{html.escape(a['evidence_quote'])}”</span>",
-        ]
-        for a in actions
-    ] or [["", "Không có Action Item rõ ràng trong nguồn.", "", "", "", ""]]
-    participant_list = ", ".join(html.escape(p["name"]) for p in data["participants"]) or "Chưa cung cấp"
-    review_items = "".join(f"<li>{html.escape(item['message'])} <span class='muted'>({html.escape(item.get('evidence_ref', ''))})</span></li>" for item in data["review_queue"])
+    participants = data["participants"]
+    participant_list = "".join(f"<span class='person'>{html.escape(p['name'])}</span>" for p in participants) or "<span class='muted'>Chưa cung cấp</span>"
+    duration_seconds = max((segment.get("timestamp_seconds") or 0 for segment in data["segments"]), default=0)
+    duration_label = seconds_to_timestamp(duration_seconds) if duration_seconds else "Chưa xác định"
+
+    quick_items: list[str] = []
+    for item in decisions[:3]:
+        quick_items.append(f"<li><strong>Quyết định:</strong> {html.escape(item['decision'])}</li>")
+    for item in actions[:3]:
+        quick_items.append(
+            f"<li><strong>Việc cần làm:</strong> {html.escape(item['task'])} - "
+            f"{html.escape(item['owner'])}, hạn {html.escape(item['deadline_text'])}</li>"
+        )
+    if not quick_items:
+        quick_items.append("<li>Không có quyết định hoặc công việc rõ ràng trong nguồn.</li>")
+
+    action_cards = []
+    for item in actions:
+        status_class = " review-needed" if item["review_status"] != "Đã xác định" else ""
+        action_cards.append(
+            f"<article class='task{status_class}' id='{html.escape(item['id'].lower())}' "
+            f"data-owner='{html.escape(item['owner'], quote=True)}' "
+            f"data-deadline='{html.escape(item.get('deadline_iso') or '9999-12-31', quote=True)}'>"
+            f"<div class='task-head'><span class='task-id'>{html.escape(item['id'])}</span>"
+            f"<div class='task-title'>{html.escape(item['task'])}</div>"
+            f"<span class='chip'>{html.escape(item['review_status'])}</span></div>"
+            f"<div class='task-meta'><strong>Phụ trách:</strong> {html.escape(item['owner'])} &nbsp; "
+            f"<strong>Deadline:</strong> {html.escape(item['deadline_text'])}</div>"
+            f"<div class='evidence'><strong>{html.escape(item['evidence_ref'])}</strong> - “{html.escape(item['evidence_quote'])}”</div>"
+            "</article>"
+        )
+    if not action_cards:
+        action_cards.append("<p>Không có Action Item rõ ràng trong nguồn.</p>")
+
+    decision_cards = []
+    for item in decisions:
+        decision_cards.append(
+            f"<article class='decision' id='{html.escape(item['id'].lower())}'>"
+            f"<div class='task-head'><span class='task-id'>{html.escape(item['id'])}</span>"
+            f"<div class='task-title'>{html.escape(item['decision'])}</div></div>"
+            f"<div class='task-meta'><strong>Người nói:</strong> {html.escape(item['speaker'])} &nbsp; "
+            f"<strong>Trạng thái:</strong> {html.escape(item['review_status'])}</div>"
+            f"<div class='evidence'><strong>{html.escape(item['evidence_ref'])}</strong> - “{html.escape(item['evidence_quote'])}”</div>"
+            "</article>"
+        )
+    if not decision_cards:
+        decision_cards.append("<p>Không có quyết định rõ ràng trong nguồn.</p>")
+
     figures = "".join(
         f"<figure><img src='{html.escape(shot['path'])}' alt='Ảnh mốc {html.escape(shot['timestamp'])}'>"
         f"<figcaption>{html.escape(shot['timestamp'])} · {html.escape(shot['caption'])}</figcaption></figure>"
         for shot in data["screenshots"]
     )
+    speakers = sorted({segment["speaker"] for segment in data["segments"]})
+    speaker_buttons = "".join(
+        f"<button type='button' data-speaker-filter='{html.escape(name, quote=True)}'>{html.escape(name)}</button>" for name in speakers
+    )
+    timeline = []
+    for segment in data["segments"]:
+        anchor = f"t-{int(segment['timestamp_seconds']):04d}" if segment.get("timestamp_seconds") is not None else f"line-{segment['line']}"
+        timeline.append(
+            f"<article class='turn' id='{anchor}' data-speaker='{html.escape(segment['speaker'], quote=True)}'>"
+            f"<div class='turn-time'>{html.escape(segment['evidence_ref'])}</div>"
+            f"<div class='turn-speaker'>{html.escape(segment['speaker'])}</div>"
+            f"<div class='turn-text'>{html.escape(segment['text'])}</div></article>"
+        )
+
+    seen_reviews: set[str] = set()
+    review_rows: list[str] = []
+    for item in data["review_queue"]:
+        message = str(item["message"])
+        if message in seen_reviews:
+            continue
+        seen_reviews.add(message)
+        review_rows.append(
+            f"<li>{html.escape(message)} <span class='muted'>({html.escape(item.get('evidence_ref', ''))})</span></li>"
+        )
+        if len(review_rows) >= 20:
+            break
+    if len(data["review_queue"]) > len(review_rows):
+        review_rows.append("<li>Xem toàn bộ mục rà soát trong <code>analysis/review_queue.json</code>.</li>")
+
+    script = """
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
+async function copyText(value){try{await navigator.clipboard.writeText(value);return true}catch(e){return false}}
+async function sharePage(){const data={title:document.title,text:'Biên bản cuộc họp',url:location.href};if(navigator.share){await navigator.share(data)}else{await copyText(location.href);alert('Đã sao chép liên kết')}}
+async function shareSection(id){const url=location.href.split('#')[0]+'#'+id;await copyText(url);history.replaceState(null,'','#'+id);alert('Đã sao chép liên kết đến phần này')}
+function filterSpeaker(name){$$('.turn').forEach(el=>el.classList.toggle('hidden',name!=='Tất cả'&&el.dataset.speaker!==name));$$('[data-speaker-filter]').forEach(b=>b.classList.toggle('active',b.dataset.speakerFilter===name))}
+function sortTasks(key){const box=$('#task-list');$$('.task',box).sort((a,b)=>(a.dataset[key]||'').localeCompare(b.dataset[key]||'','vi')).forEach(el=>box.appendChild(el))}
+function copyPlan(){copyText($$('#task-list .task').map(el=>el.innerText.trim()).join('\\n\\n')).then(()=>alert('Đã sao chép kế hoạch hành động'))}
+$$('[data-share-section]').forEach(b=>b.addEventListener('click',()=>shareSection(b.dataset.shareSection)));
+$$('[data-speaker-filter]').forEach(b=>b.addEventListener('click',()=>filterSpeaker(b.dataset.speakerFilter)));
+"""
     doc = f"""<!doctype html>
 <html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>{html.escape(data['title'])}</title><style>{css}</style></head><body><main>
-<h1>{html.escape(data['title'])}</h1>
-<p class="meta">Ngày họp: {html.escape(data['meeting_date'] or 'Chưa nêu')} · Nguồn: {html.escape(data['source']['name'])}</p>
-<p><strong>Người tham gia:</strong> {participant_list}</p>
-<p class="notice">Tài liệu chỉ phản ánh thông tin có trong nguồn. Các mục “Cần rà soát” chưa nên dùng để giao việc hoặc gửi email.</p>
-<h2>Tóm tắt kiểm chứng</h2>
-<p>Ghi nhận {len(decisions)} quyết định rõ ràng và {len(actions)} Action Item. Có {len(data['review_queue'])} vấn đề cần rà soát.</p>
-<h2>Quyết định</h2>
-{html_table(['Mã','Quyết định','Người nói','Dẫn chứng','Trạng thái'], decision_rows)}
-<h2>Action Items</h2>
-{html_table(['Mã','Công việc','Người phụ trách','Deadline','Trạng thái','Dẫn chứng'], action_rows)}
-<h2>Hàng đợi rà soát</h2>
-<ul>{review_items or '<li>Không có mục cần rà soát.</li>'}</ul>
-<h2>Ảnh tại các mốc quan trọng</h2>
-{figures or '<p class="muted">Không có ảnh mốc. Kiểm tra video và timestamp trong nguồn.</p>'}
-</main></body></html>"""
-    target = output_dir / "bien-ban.html"
-    target.write_text(doc, encoding="utf-8")
-    return target
+<title>{html.escape(data['title'])}</title><style>{css}</style></head><body>
+<nav class="reader-bar"><strong>Biên bản cuộc họp</strong><a href="#muc-luc">Mục lục</a><button type="button" onclick="sharePage()">Chia sẻ</button><button type="button" onclick="window.print()">In / PDF</button></nav>
+<main class="page">
+<header class="hero"><div class="eyebrow">BIÊN BẢN CÓ DẪN CHỨNG</div><h1>{html.escape(data['title'])}</h1>
+<div class="meta-grid"><div class="meta-card"><span>Ngày</span><strong>{html.escape(data['meeting_date'] or 'Chưa nêu')}</strong></div><div class="meta-card"><span>Thời lượng</span><strong>{duration_label}</strong></div><div class="meta-card"><span>Nguồn</span><strong>{html.escape(data['source']['type'])}</strong></div><div class="meta-card"><span>Trạng thái</span><strong>{'Cần rà soát' if data['review_queue'] else 'Đã kiểm tra'}</strong></div></div>
+<div class="people">{participant_list}</div><div class="stats"><div class="stat"><b>{len(decisions)}</b><span>quyết định</span></div><div class="stat"><b>{len(actions)}</b><span>việc cần làm</span></div><div class="stat"><b>{len(data['review_queue'])}</b><span>mục cần rà soát</span></div><div class="stat"><b>{len(data['screenshots'])}</b><span>ảnh có mốc</span></div></div>
+<div class="notice">Tài liệu chỉ phản ánh thông tin trong nguồn. Không dùng mục “Cần rà soát” để giao việc hoặc gửi email trước khi xác nhận.</div></header>
+<nav class="toc" id="muc-luc"><strong>NỘI DUNG CHÍNH</strong><ol><li><a href="#y-chinh">Ý chính 30 giây</a></li><li><a href="#ke-hoach">Kế hoạch hành động</a></li><li><a href="#quyet-dinh">Quyết định</a></li><li><a href="#hinh-anh">Hình ảnh</a></li><li><a href="#dien-bien">Diễn biến</a></li><li><a href="#con-mo">Cần rà soát</a></li><li><a href="#kiem-chung">Kiểm chứng</a></li></ol></nav>
+<section class="section" id="y-chinh"><div class="section-head"><span class="number">1</span><h2>Ý chính 30 giây</h2><button type="button" data-share-section="y-chinh">Chia sẻ phần</button></div><ul class="quick-list">{''.join(quick_items)}</ul><div class="summary-band"><span>{len(decisions)} quyết định</span><span>·</span><span>{len(actions)} việc cần làm</span><span>·</span><span>{len(data['review_queue'])} mục cần rà soát</span></div></section>
+<section class="section" id="ke-hoach"><div class="section-head"><span class="number">2</span><h2>Kế hoạch hành động</h2><button type="button" data-share-section="ke-hoach">Chia sẻ phần</button></div><div class="controls"><button type="button" onclick="sortTasks('deadline')">Theo thời hạn</button><button type="button" onclick="sortTasks('owner')">Theo người</button><button type="button" onclick="copyPlan()">Sao chép kế hoạch</button></div><div class="cards" id="task-list">{''.join(action_cards)}</div></section>
+<section class="section" id="quyet-dinh"><div class="section-head"><span class="number">3</span><h2>Quyết định đã chốt</h2><button type="button" data-share-section="quyet-dinh">Chia sẻ phần</button></div><div class="cards">{''.join(decision_cards)}</div></section>
+<section class="section" id="hinh-anh"><div class="section-head"><span class="number">4</span><h2>Slide và hình ảnh</h2><button type="button" data-share-section="hinh-anh">Chia sẻ phần</button></div><div class="gallery">{figures or '<p class="muted">Không có screenshot từ nguồn. Với audio, chỉ dùng hình minh họa đã được gắn nhãn rõ ràng.</p>'}</div></section>
+<section class="section" id="dien-bien"><div class="section-head"><span class="number">5</span><h2>Diễn biến cuộc họp</h2><button type="button" data-share-section="dien-bien">Chia sẻ phần</button></div><div class="controls"><button type="button" class="active" data-speaker-filter="Tất cả">Tất cả</button>{speaker_buttons}</div><div class="timeline">{''.join(timeline)}</div></section>
+<section class="section" id="con-mo"><div class="section-head"><span class="number">6</span><h2>Câu hỏi còn mở và mục cần rà soát</h2><button type="button" data-share-section="con-mo">Chia sẻ phần</button></div><ul class="review-list">{''.join(review_rows) or '<li>Không có mục cần rà soát.</li>'}</ul></section>
+<section class="section audit" id="kiem-chung"><div class="section-head"><span class="number">7</span><h2>Kiểm chứng</h2><button type="button" data-share-section="kiem-chung">Chia sẻ phần</button></div><p>Nguồn: {html.escape(data['source']['name'])} · SHA-256: <code>{html.escape(data['source']['sha256'])}</code></p><p>Tạo lúc {html.escape(data['generated_at'])}. Email chưa được gửi; việc xuất bản trang chia sẻ phải được người dùng phê duyệt.</p></section>
+</main><script>{script}</script></body></html>"""
+    share_target = output_dir / "bien-ban-share.html"
+    share_target.write_text(doc, encoding="utf-8")
+    (output_dir / "bien-ban.html").write_text(doc, encoding="utf-8")
+    return share_target
 
 
 def register_pdf_fonts() -> tuple[str, str]:
@@ -601,6 +667,165 @@ def build_pdf(data: dict[str, Any], output_dir: Path) -> Path:
     return target
 
 
+def build_reader_pdf(data: dict[str, Any], output_dir: Path) -> Path:
+    """Create the portrait, reader-facing PDF paired with bien-ban-share.html."""
+    try:
+        from reportlab.lib import colors
+        from reportlab.lib.pagesizes import A4
+        from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+        from reportlab.lib.units import mm
+        from reportlab.platypus import Image, KeepTogether, LongTable, PageBreak, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+    except ImportError:
+        fail("Thiếu reportlab. Hãy dùng Python bundled của Codex hoặc cài reportlab.")
+
+    regular, bold = register_pdf_fonts()
+    target = output_dir / "bien-ban.pdf"
+    doc = SimpleDocTemplate(
+        str(target), pagesize=A4, rightMargin=15 * mm, leftMargin=15 * mm,
+        topMargin=14 * mm, bottomMargin=15 * mm,
+        title=f"{data['title']} - Biên bản", author="Meeting Minutes Agent",
+    )
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle("ReaderTitle", parent=styles["Title"], fontName=bold, fontSize=22, leading=27, textColor=colors.HexColor("#252B30"), spaceAfter=7, alignment=0)
+    eyebrow_style = ParagraphStyle("ReaderEyebrow", parent=styles["BodyText"], fontName=bold, fontSize=8, leading=10, textColor=colors.HexColor("#D85B25"), spaceAfter=5)
+    heading_style = ParagraphStyle("ReaderHeading", parent=styles["Heading2"], fontName=bold, fontSize=13, leading=17, textColor=colors.HexColor("#165D72"), spaceBefore=10, spaceAfter=7)
+    body_style = ParagraphStyle("ReaderBody", parent=styles["BodyText"], fontName=regular, fontSize=9, leading=13, textColor=colors.HexColor("#252B30"))
+    body_bold = ParagraphStyle("ReaderBodyBold", parent=body_style, fontName=bold)
+    small_style = ParagraphStyle("ReaderSmall", parent=body_style, fontSize=7.3, leading=9.5, textColor=colors.HexColor("#68737B"))
+    quote_style = ParagraphStyle("ReaderQuote", parent=small_style, fontName=regular, fontSize=7.8, leading=10, leftIndent=7, textColor=colors.HexColor("#6C7378"))
+    stat_value = ParagraphStyle("StatValue", parent=body_style, fontName=bold, fontSize=15, leading=16, textColor=colors.HexColor("#165D72"))
+    stat_label = ParagraphStyle("StatLabel", parent=small_style, fontSize=7)
+    header_style = ParagraphStyle("TableHeader", parent=small_style, fontName=bold, textColor=colors.HexColor("#5E6870"), fontSize=7.2)
+
+    def p(value: Any, style=body_style) -> Paragraph:
+        return Paragraph(html.escape(str(value)).replace("\n", "<br/>"), style)
+
+    def footer(canvas, document):
+        canvas.saveState()
+        canvas.setStrokeColor(colors.HexColor("#D7D4CE"))
+        canvas.line(15 * mm, 11 * mm, A4[0] - 15 * mm, 11 * mm)
+        canvas.setFont(regular, 7)
+        canvas.setFillColor(colors.HexColor("#7A858D"))
+        canvas.drawString(15 * mm, 7 * mm, data["title"][:76])
+        canvas.drawRightString(A4[0] - 15 * mm, 7 * mm, f"Trang {document.page}")
+        canvas.restoreState()
+
+    story: list[Any] = [p("B I E N  B A N  C U O C  H O P", eyebrow_style), p(data["title"], title_style)]
+    meta = [
+        [p("Ngày", header_style), p(data["meeting_date"] or "Chưa nêu", body_bold), p("Nguồn", header_style), p(data["source"]["type"], body_bold)],
+        [p("Thành phần", header_style), p(", ".join(x["name"] for x in data["participants"]) or "Chưa cung cấp", body_style), p("Tệp", header_style), p(data["source"]["name"], small_style)],
+    ]
+    meta_table = Table(meta, colWidths=[18 * mm, 65 * mm, 18 * mm, 79 * mm])
+    meta_table.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"), ("BOTTOMPADDING", (0, 0), (-1, -1), 4), ("TOPPADDING", (0, 0), (-1, -1), 2)]))
+    story.extend([meta_table, Spacer(1, 4 * mm)])
+
+    stats = [[
+        [p(len(data["decisions"]), stat_value), p("quyết định", stat_label)],
+        [p(len(data["action_items"]), stat_value), p("công việc", stat_label)],
+        [p(len(data["review_queue"]), stat_value), p("mục cần rà soát", stat_label)],
+        [p(len(data["screenshots"]), stat_value), p("ảnh có mốc", stat_label)],
+    ]]
+    stat_table = Table(stats, colWidths=[45 * mm] * 4)
+    stat_table.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#F3F0EA")),
+        ("BOX", (0, 0), (-1, -1), 0.4, colors.HexColor("#E2DED6")),
+        ("INNERGRID", (0, 0), (-1, -1), 4, colors.white),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("LEFTPADDING", (0, 0), (-1, -1), 9), ("RIGHTPADDING", (0, 0), (-1, -1), 9),
+        ("TOPPADDING", (0, 0), (-1, -1), 8), ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+    ]))
+    story.extend([stat_table, Spacer(1, 4 * mm)])
+
+    story.append(p("1. Tóm tắt", heading_style))
+    summary_items = []
+    for item in data["decisions"][:3]:
+        summary_items.append(f"Quyết định: {item['decision']}")
+    for item in data["action_items"][:3]:
+        summary_items.append(f"Việc cần làm: {item['task']} - {item['owner']}, hạn {item['deadline_text']}")
+    if not summary_items:
+        summary_items.append("Không có quyết định hoặc công việc rõ ràng trong nguồn.")
+    for item in summary_items:
+        story.append(p("- " + item))
+
+    story.append(p("2. Diễn biến và dẫn chứng", heading_style))
+    milestones = []
+    for kind, items in (("Quyết định", data["decisions"]), ("Công việc", data["action_items"])):
+        for item in items:
+            milestones.append({
+                "kind": kind,
+                "second": item.get("timestamp_seconds"),
+                "ref": item["evidence_ref"],
+                "title": item.get("decision") or item.get("task"),
+                "quote": item["evidence_quote"],
+            })
+    milestones.sort(key=lambda x: x["second"] if x["second"] is not None else 10**12)
+    for item in milestones[:12]:
+        block = Table([[p(item["ref"], body_bold), [p(item["kind"], body_bold), p(item["title"]), p('“' + item["quote"] + '”', quote_style)]]], colWidths=[22 * mm, 158 * mm])
+        block.setStyle(TableStyle([
+            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ("LINEBELOW", (0, 0), (-1, -1), 0.35, colors.HexColor("#DDD8D0")),
+            ("TOPPADDING", (0, 0), (-1, -1), 5), ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+            ("LEFTPADDING", (0, 0), (-1, -1), 0), ("RIGHTPADDING", (0, 0), (-1, -1), 5),
+        ]))
+        story.append(KeepTogether(block))
+
+    if data["screenshots"]:
+        story.extend([PageBreak(), p("3. Slide và hình ảnh", heading_style)])
+        for shot in data["screenshots"][:6]:
+            img_path = output_dir / shot["path"]
+            image = Image(str(img_path))
+            max_width, max_height = 82 * mm, 48 * mm
+            ratio = min(max_width / image.imageWidth, max_height / image.imageHeight)
+            image.drawWidth = image.imageWidth * ratio
+            image.drawHeight = image.imageHeight * ratio
+            caption = [p(f"{shot['timestamp']} - {shot['caption']}", body_bold), p("Ảnh chụp từ video tại mốc dẫn chứng.", small_style)]
+            row = Table([[image, caption]], colWidths=[88 * mm, 92 * mm])
+            row.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"), ("LINEBELOW", (0, 0), (-1, -1), 0.35, colors.HexColor("#DDD8D0")), ("TOPPADDING", (0, 0), (-1, -1), 5), ("BOTTOMPADDING", (0, 0), (-1, -1), 6)]))
+            story.append(KeepTogether(row))
+
+    story.extend([PageBreak(), p("4. Quyết định", heading_style)])
+    decision_rows = [[p("Mã", header_style), p("Quyết định", header_style), p("Người nói", header_style), p("Dẫn chứng", header_style)]]
+    for item in data["decisions"]:
+        decision_rows.append([p(item["id"], body_bold), p(item["decision"]), p(item["speaker"]), p(item["evidence_ref"] + " - " + item["review_status"], small_style)])
+    if len(decision_rows) == 1:
+        decision_rows.append([p(""), p("Không có quyết định rõ ràng trong nguồn."), p(""), p("")])
+    decision_table = LongTable(decision_rows, colWidths=[14 * mm, 101 * mm, 32 * mm, 33 * mm], repeatRows=1)
+    decision_table.setStyle(TableStyle([("LINEBELOW", (0, 0), (-1, 0), 1, colors.HexColor("#165D72")), ("LINEBELOW", (0, 1), (-1, -1), 0.35, colors.HexColor("#DDD8D0")), ("VALIGN", (0, 0), (-1, -1), "TOP"), ("TOPPADDING", (0, 0), (-1, -1), 5), ("BOTTOMPADDING", (0, 0), (-1, -1), 5)]))
+    story.append(decision_table)
+
+    story.append(p("5. Kế hoạch hành động", heading_style))
+    action_rows = [[p("Mã", header_style), p("Công việc", header_style), p("Phụ trách", header_style), p("Thời hạn", header_style), p("Căn cứ", header_style)]]
+    for item in data["action_items"]:
+        owner_style = ParagraphStyle("OwnerWarn", parent=body_style, fontName=bold, textColor=colors.HexColor("#B9382E")) if item["owner"] == "Chưa xác định" else body_style
+        action_rows.append([p(item["id"], body_bold), p(item["task"]), p(item["owner"], owner_style), p(item["deadline_text"]), p(item["evidence_ref"], small_style)])
+    if len(action_rows) == 1:
+        action_rows.append([p(""), p("Không có Action Item rõ ràng trong nguồn."), p(""), p(""), p("")])
+    action_table = LongTable(action_rows, colWidths=[14 * mm, 76 * mm, 32 * mm, 31 * mm, 27 * mm], repeatRows=1)
+    action_table.setStyle(TableStyle([("LINEBELOW", (0, 0), (-1, 0), 1, colors.HexColor("#165D72")), ("LINEBELOW", (0, 1), (-1, -1), 0.35, colors.HexColor("#DDD8D0")), ("VALIGN", (0, 0), (-1, -1), "TOP"), ("TOPPADDING", (0, 0), (-1, -1), 5), ("BOTTOMPADDING", (0, 0), (-1, -1), 5)]))
+    story.append(action_table)
+
+    story.append(p("6. Vấn đề còn mở và kiểm chứng", heading_style))
+    unique_reviews = []
+    seen = set()
+    for item in data["review_queue"]:
+        if item["message"] in seen:
+            continue
+        seen.add(item["message"])
+        unique_reviews.append(item)
+    if unique_reviews:
+        for item in unique_reviews[:15]:
+            story.append(p(f"- {item['message']} ({item.get('evidence_ref', '')})"))
+    else:
+        story.append(p("Không có mục cần rà soát."))
+    story.extend([
+        Spacer(1, 3 * mm),
+        p(f"Kiểm chứng: {len(data['decisions'])} quyết định, {len(data['action_items'])} công việc, {len(data['review_queue'])} mục rà soát. Nguồn SHA-256: {data['source']['sha256']}", small_style),
+        p("Email chưa được gửi. Bản web chỉ được xuất bản cho người khác xem sau khi người dùng xác nhận phạm vi chia sẻ.", small_style),
+    ])
+    doc.build(story, onFirstPage=footer, onLaterPages=footer)
+    return target
+
+
 def write_email_drafts(data: dict[str, Any], output_dir: Path) -> list[Path]:
     drafts_dir = output_dir / "email-drafts"
     drafts_dir.mkdir(parents=True, exist_ok=True)
@@ -692,6 +917,9 @@ def write_peas_report(data: dict[str, Any], output_dir: Path, warnings: list[str
             "read_transcript": True,
             "speaker_matching": True,
             "screenshots_created": len(data["screenshots"]),
+            "share_html_created": (output_dir / "bien-ban-share.html").is_file(),
+            "pdf_created": (output_dir / "bien-ban.pdf").is_file(),
+            "web_published": False,
             "action_items_extracted": len(data["action_items"]),
             "email_drafts_created": len([item for item in data["action_items"] if item["owner"] != "Chưa xác định" and item["owner_email"]]),
             "email_sent": False,
@@ -723,7 +951,8 @@ def write_peas_report(data: dict[str, Any], output_dir: Path, warnings: list[str
         "",
         "## A Hành động",
         "",
-        f"- Tạo {len(data['screenshots'])} screenshot, {len(data['action_items'])} Action Item và email nháp cục bộ. Không gửi email.",
+        f"- Tạo bản web chia sẻ cục bộ, PDF A4, {len(data['screenshots'])} screenshot, {len(data['action_items'])} Action Item và email nháp cục bộ.",
+        "- Chưa xuất bản web và không gửi email.",
         "",
         "## S Đầu vào",
         "",
@@ -810,7 +1039,18 @@ def run(args: argparse.Namespace) -> None:
     write_json(data_path, data)
     write_json(output_dir / "analysis" / "review_queue.json", reviews)
     build_html(data, output_dir)
-    build_pdf(data, output_dir)
+    build_reader_pdf(data, output_dir)
+    write_json(
+        output_dir / "sharing.json",
+        {
+            "status": "local_only",
+            "url": None,
+            "audience": "local",
+            "provider": None,
+            "published_at": None,
+            "note": "Bản web chưa được tải lên dịch vụ hosting. Cần người dùng xác nhận phạm vi chia sẻ trước khi xuất bản.",
+        },
+    )
     build_xlsx(data_path, output_dir)
     write_email_drafts(data, output_dir)
     write_peas_report(data, output_dir, warnings)
